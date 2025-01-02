@@ -26,11 +26,21 @@ async function run() {
     try {
         const menuCollection = client.db('foodDB').collection('menus')
         const reviewCollection = client.db('foodDB').collection('reviews')
+        const cartCollection = client.db('foodDB').collection('carts')
+
+        // carts related apis
+        app.post('/carts',async(req,res)=>{
+            const cartData = req.body;
+            const result = await cartCollection.insertOne(cartData);
+            res.send(result);
+        })
+
 
         app.get('/menus', async(req,res)=>{
             const result = await menuCollection.find().toArray();
             res.send(result)
         })
+
         app.get('/reviews', async(req,res)=>{
             const result = await reviewCollection.find().toArray();
             res.send(result)
