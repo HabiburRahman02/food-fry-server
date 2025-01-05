@@ -24,15 +24,28 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
+        const userCollection = client.db('foodDB').collection('users')
         const menuCollection = client.db('foodDB').collection('menus')
         const reviewCollection = client.db('foodDB').collection('reviews')
         const cartCollection = client.db('foodDB').collection('carts')
 
-        // carts related apis
-        app.get('/cart', async(req,res)=>{
+        // user related apis
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const query = {email: user?.email};
+           const isExist = await userCollection.findOne(query)
+           if(isExist){
+            return res.send({message: 'user already exist in db'})
+           }
+            const result = await userCollection.insertOne(user);
+            res.send(result);
+        })
+
+        // cart related apis
+        app.get('/cart', async (req, res) => {
             const email = req.query.email;
-            const query = {email};
-            const result =await cartCollection.find(query).toArray();
+            const query = { email };
+            const result = await cartCollection.find(query).toArray();
             res.send(result);
         })
 
@@ -42,9 +55,9 @@ async function run() {
             res.send(result);
         })
 
-        app.delete('/cart/:id', async(req,res)=>{
+        app.delete('/cart/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)};
+            const query = { _id: new ObjectId(id) };
             const result = await cartCollection.deleteOne(query);
             res.send(result);
         })
