@@ -30,13 +30,18 @@ async function run() {
         const cartCollection = client.db('foodDB').collection('carts')
 
         // user related apis
+        app.get('/users', async (req, res) => {
+            const result = await userCollection.find().toArray();
+            res.send(result)
+        })
+
         app.post('/users', async (req, res) => {
             const user = req.body;
-            const query = {email: user?.email};
-           const isExist = await userCollection.findOne(query)
-           if(isExist){
-            return res.send({message: 'user already exist in db'})
-           }
+            const query = { email: user?.email };
+            const isExist = await userCollection.findOne(query)
+            if (isExist) {
+                return res.send({ message: 'user already exist in db' })
+            }
             const result = await userCollection.insertOne(user);
             res.send(result);
         })
