@@ -1,5 +1,6 @@
 const express = require('express')
 const app = express()
+const jwt = require('jsonwebtoken');
 const cors = require('cors');
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -22,6 +23,21 @@ const client = new MongoClient(uri, {
     }
 });
 
+const verifyToken = (req, res, next) => {
+    if (!req?.headers?.authorization) {
+        return res.status(401).send({ message: 'unauthorized access' })
+    }
+    const token = req?.headers?.authorization.split(' ')[1];
+    console.log(token);
+    jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+        if (err) {
+           return res.status(401).send({ message: 'unauthorized access' })
+        }
+        req.user = decoded
+        next();
+    })
+}
+
 async function run() {
     try {
         const userCollection = client.db('foodDB').collection('users')
@@ -29,8 +45,16 @@ async function run() {
         const reviewCollection = client.db('foodDB').collection('reviews')
         const cartCollection = client.db('foodDB').collection('carts')
 
+        // jwt related apis
+        app.post('/jwt', async (req, res) => {
+            const data = req.body;
+            const token = jwt.sign(data, process.env.ACCESS_TOKEN, { expiresIn: '30d' })
+            res.send({ token });
+        })
+
         // user related apis
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyToken, async (req, res) => {
+            // console.log(req.user);
             const result = await userCollection.find().toArray();
             res.send(result)
         })
@@ -46,16 +70,16 @@ async function run() {
             res.send(result);
         })
 
-        app.delete('/user/:id', async(req,res)=>{
+        app.delete('/user/:id',verifyToken, async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await userCollection.deleteOne(query);
             res.send(result);
         })
 
-        app.patch('/user/admin/:id', async(req,res)=>{
+        app.patch('/user/admin/:id',verifyToken, async (req, res) => {
             const id = req.params.id;
-            const filter = {_id: new ObjectId(id)}
+            const filter = { _id: new ObjectId(id) }
             const updatedDoc = {
                 $set: {
                     role: 'admin'
@@ -79,7 +103,7 @@ async function run() {
             res.send(result);
         })
 
-        app.delete('/cart/:id', async (req, res) => {
+        app.delete('/cart/:id',verifyToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await cartCollection.deleteOne(query);
