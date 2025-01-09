@@ -37,6 +37,7 @@ const verifyToken = (req, res, next) => {
     })
 }
 
+
 async function run() {
     try {
         const userCollection = client.db('foodDB').collection('users')
@@ -51,6 +52,18 @@ async function run() {
             res.send({ token });
         })
 
+        // validation
+        const verifyAdmin = async(req,res,next)=>{
+            const email = req.decoded.email;
+            const query = {email: email}
+            const user = await userCollection.findOne(query);
+            const isAdmin = user?.role === 'admin'
+            if(!isAdmin){
+                return res.status(403).send({message: 'Forbidden access'})
+            }
+            next();
+        }
+        
         // user related apis
         app.get('/user/admin/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
@@ -68,7 +81,7 @@ async function run() {
             res.send({admin})
         })
 
-        app.get('/users', verifyToken, async (req, res) => {
+        app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
             // console.log(req.user);
             const result = await userCollection.find().toArray();
             res.send(result)
