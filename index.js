@@ -11,9 +11,10 @@ app.use(cors());
 app.use(express.json());
 
 
+const uri = `mongodb://${process.env.DB_USER}:${process.env.DB_PASS}@cluster3-shard-00-00.ggy8e.mongodb.net:27017,cluster3-shard-00-01.ggy8e.mongodb.net:27017,cluster3-shard-00-02.ggy8e.mongodb.net:27017/?ssl=true&replicaSet=atlas-12vcf6-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster3`;
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster3.ggy8e.mongodb.net/?retryWrites=true&w=majority&appName=Cluster3`;
 
+console.log(uri);
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
     serverApi: {
@@ -67,8 +68,8 @@ async function run() {
         // user related apis
         app.get('/user/admin/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
-            console.log('email', email);
-            console.log('header data', req?.decoded?.email);
+            // console.log('email', email);
+            // console.log('header data', req?.decoded?.email);
             if(email !== req?.decoded?.email ){
                 return res.status(403).send({message: 'Forbidden access'})
             }
@@ -81,7 +82,7 @@ async function run() {
             res.send({admin})
         })
 
-        app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
+        app.get('/users', verifyToken, async (req, res) => {
             // console.log(req.user);
             const result = await userCollection.find().toArray();
             res.send(result)
@@ -144,6 +145,13 @@ async function run() {
             res.send(result)
         })
 
+        app.post('/menu',async(req,res)=>{
+            const item = req.body;
+            const result = await menuCollection.insertOne(item);
+            res.send(result);
+        })
+
+        // review related apis
         app.get('/reviews', async (req, res) => {
             const result = await reviewCollection.find().toArray();
             res.send(result)
